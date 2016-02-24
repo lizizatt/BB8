@@ -4,7 +4,7 @@
 #include "printf.h"
 
 RF24 radio(8,9);
-const uint64_t pipes[2] = { 0xF0F0F0F0E1LL, 0xF0F0F0F0D2LL };
+const uint64_t pipe = 0xE8E8F0F0E1LL;
 
 void setup(void)
 {
@@ -12,10 +12,14 @@ void setup(void)
 
   printf_begin();
   Serial.print("\n\rBB8 Remote Control\n\r");
-
+  
   radio.begin();
-
-  radio.openWritingPipe(pipes[0]);
+  radio.setChannel(108);
+  radio.setPALevel(RF24_PA_LOW);
+  radio.setRetries(15, 15);
+  radio.setPayloadSize(8);
+  
+  radio.openWritingPipe(pipe);
   radio.printDetails();
 }
 
@@ -24,9 +28,10 @@ void loop(void)
   delay(1000);
   
   unsigned long toGo = millis();
-
-  bool ok = radio.write(&toGo, sizeof(unsigned long));
-  if (ok) {
+  
+  int numAttempts = 0;
+  bool res = radio.write(&toGo, sizeof(toGo));
+  if (res) {
     Serial.println("Sent <" + String(toGo) + ">!");
   } else {
     Serial.println("Failed to send <" + String(toGo) + ">");
